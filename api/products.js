@@ -1,15 +1,4 @@
-import supabase from './db-client.js';
-
-const ADMIN_EMAIL = 'admin@uncommonclothing.lk';
-
-async function verifyAdmin(req) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return null;
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-  if (user.email !== ADMIN_EMAIL) return null;
-  return user;
-}
+import supabase, { verifyAdmin, rewriteSupabaseUrl } from './db-client.js';
 
 async function enrichProducts(products) {
   if (!products || products.length === 0) return products;
@@ -29,14 +18,19 @@ async function enrichProducts(products) {
     imgMap[img.product_id].push(img);
   });
   return products.map(p => {
-    const images = imgMap[p.id] || [];
+    const images = (imgMap[p.id] || []).map(img => ({
+      ...img,
+      image_url: rewriteSupabaseUrl(img.image_url)
+    }));
     const primaryImg = images.find(i => i.is_primary);
+    const rewrittenImageUrl = rewriteSupabaseUrl(p.image_url);
     return {
       ...p,
+      image_url: rewrittenImageUrl,
       categories: p.category_id ? catMap[p.category_id] || null : null,
       discounts: p.discount_id ? discMap[p.discount_id] || null : null,
       product_images: images,
-      display_image: primaryImg ? primaryImg.image_url : p.image_url,
+      display_image: primaryImg ? primaryImg.image_url : rewrittenImageUrl,
     };
   });
 }

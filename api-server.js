@@ -50,8 +50,9 @@ const server = http.createServer(async (req, res) => {
 
         if (fs.existsSync(handlerPath)) {
             try {
-                // Dynamically import the handler
-                const module = await import(`${handlerPath}?update=${Date.now()}`);
+                // Dynamically import the handler (handling Windows file:// URL scheme compatibility)
+                const fileUrl = new URL(`file://${handlerPath.replace(/\\/g, '/')}`);
+                const module = await import(`${fileUrl.href}?update=${Date.now()}`);
                 const handler = module.default;
 
                 // Mock Vercel req/res helpers

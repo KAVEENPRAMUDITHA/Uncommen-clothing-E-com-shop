@@ -1,15 +1,4 @@
-import supabase from './db-client.js';
-
-const ADMIN_EMAIL = 'admin@uncommonclothing.lk';
-
-async function verifyAdmin(req) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return null;
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-  if (user.email !== ADMIN_EMAIL) return null;
-  return user;
-}
+import supabase, { verifyAdmin } from './db-client.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

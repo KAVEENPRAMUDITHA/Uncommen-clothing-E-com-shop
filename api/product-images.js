@@ -1,15 +1,4 @@
-import supabase from './db-client.js';
-
-const ADMIN_EMAIL = 'admin@uncommonclothing.lk';
-
-async function verifyAdmin(req) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return null;
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-  if (user.email !== ADMIN_EMAIL) return null;
-  return user;
-}
+import supabase, { verifyAdmin, rewriteSupabaseUrl } from './db-client.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -24,7 +13,11 @@ export default async function handler(req, res) {
       if (product_id) query = query.eq('product_id', Number(product_id));
       const { data, error } = await query;
       if (error) throw error;
-      return res.status(200).json(data || []);
+      const formatted = (data || []).map(img => ({
+        ...img,
+        image_url: rewriteSupabaseUrl(img.image_url)
+      }));
+      return res.status(200).json(formatted);
     }
     if (req.method === 'POST') {
       const admin = await verifyAdmin(req);

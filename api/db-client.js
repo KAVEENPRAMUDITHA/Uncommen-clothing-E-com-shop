@@ -22,3 +22,33 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 });
 
 export default supabase;
+
+export async function verifyAdmin(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return null;
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return null;
+  if (user.email === 'admin@uncommonclothing.lk') return user;
+  
+  const { data: roleData } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (roleData?.role === 'admin') return user;
+  return null;
+}
+
+export function rewriteSupabaseUrl(url) {
+  if (!url) return url;
+  const projectRef = process.env.FULLSTACK_PROJECT_REF || 'qsaaascspwlwveglmxgb';
+  
+  // Clean S3 gateway endpoints to public CDN formats
+  let cleaned = url.replace(/https:\/\/[\w\-]+\.storage\.supabase\.co\/storage\/v1\/s3\//gi, `https://${projectRef}.supabase.co/storage/v1/object/public/`);
+  
+  // Clean any old supabase.co subdomains to current active subdomain
+  cleaned = cleaned.replace(/https:\/\/[\w\-]+\.supabase\.co\/storage\/v1\/object\/public\//gi, `https://${projectRef}.supabase.co/storage/v1/object/public/`);
+  
+  return cleaned;
+}
