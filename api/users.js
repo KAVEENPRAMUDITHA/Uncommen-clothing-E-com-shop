@@ -1,6 +1,4 @@
-import supabase, { verifyAdmin } from './db-client.js';
-
-const ADMIN_EMAIL = 'admin@uncommonclothing.lk';
+import supabase, { verifyAdmin, getAdminEmail } from './db-client.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,6 +7,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
+    const adminEmail = await getAdminEmail();
+
     if (req.method === 'GET') {
       const admin = await verifyAdmin(req);
       if (!admin) return res.status(401).json({ error: 'Admin only' });
@@ -34,8 +34,8 @@ export default async function handler(req, res) {
         email: u.email,
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
-        role: u.email === ADMIN_EMAIL ? 'admin' : (roleMap[u.id] || 'customer'),
-        is_super: u.email === ADMIN_EMAIL,
+        role: u.email === adminEmail ? 'admin' : (roleMap[u.id] || 'customer'),
+        is_super: u.email === adminEmail,
         order_count: orderCountMap[u.id] || 0,
       }));
 
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
 
       // Don't allow demoting the super-admin
       const { data: targetUser } = await supabase.auth.admin.getUserById(id);
-      if (targetUser?.user?.email === ADMIN_EMAIL) {
+      if (targetUser?.user?.email === adminEmail) {
         return res.status(400).json({ error: 'Cannot modify super-admin role' });
       }
 
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
 
       // Don't allow deleting the super-admin
       const { data: targetUser } = await supabase.auth.admin.getUserById(id);
-      if (targetUser?.user?.email === ADMIN_EMAIL) {
+      if (targetUser?.user?.email === adminEmail) {
         return res.status(400).json({ error: 'Cannot delete super-admin' });
       }
 

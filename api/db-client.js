@@ -23,12 +23,27 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 export default supabase;
 
+export async function getAdminEmail() {
+  try {
+    const { data } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'admin_email')
+      .maybeSingle();
+    return data?.value || 'admin@uncommonclothing.lk';
+  } catch (e) {
+    return 'admin@uncommonclothing.lk';
+  }
+}
+
 export async function verifyAdmin(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return null;
   const { data: { user }, error } = await supabase.auth.getUser(token);
   if (error || !user) return null;
-  if (user.email === 'admin@uncommonclothing.lk') return user;
+  
+  const adminEmail = await getAdminEmail();
+  if (user.email === adminEmail) return user;
   
   const { data: roleData } = await supabase
     .from('user_roles')

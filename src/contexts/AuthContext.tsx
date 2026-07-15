@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import supabase from '../lib/supabase';
-import { ADMIN_EMAIL } from '../lib/utils';
 
 type AuthUser = { id: string; email: string } | null;
 
@@ -25,10 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const checkAdmin = async (u: AuthUser) => {
         if (!u) { setIsAdmin(false); return; }
-        if (u.email === ADMIN_EMAIL) { setIsAdmin(true); return; }
-        // Check user_roles table for role-based admin
-        const { data } = await supabase.from('user_roles').select('role').eq('user_id', u.id).single();
-        setIsAdmin(data?.role === 'admin');
+        // 1. Check user_roles table for role-based admin
+        const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', u.id).maybeSingle();
+        if (roleData?.role === 'admin') { setIsAdmin(true); return; }
+        // 2. Check settings table for admin_email
+        const { data: settingData } = await supabase.from('settings').select('value').eq('key', 'admin_email').maybeSingle();
+        const dbAdminEmail = settingData?.value || 'admin@uncommonclothing.lk';
+        setIsAdmin(u.email === dbAdminEmail);
     };
 
     useEffect(() => {

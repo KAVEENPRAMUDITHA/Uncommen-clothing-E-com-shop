@@ -1,6 +1,4 @@
-import supabase from './db-client.js';
-
-const ADMIN_EMAIL = 'admin@uncommonclothing.lk';
+import supabase, { getAdminEmail } from './db-client.js';
 
 async function verifyUser(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -17,6 +15,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
+    const adminEmail = await getAdminEmail();
+
     if (req.method === 'GET') {
       const user = await verifyUser(req);
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       let query = supabase.from('orders').select('*, order_items(*)');
       
       // If the user is NOT the admin, filter by their own email
-      if (user.email !== ADMIN_EMAIL) {
+      if (user.email !== adminEmail) {
         query = query.eq('customer_email', user.email);
       }
 
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
     if (req.method === 'PUT') {
       // Admin only: Update order status
       const user = await verifyUser(req);
-      if (!user || user.email !== ADMIN_EMAIL) {
+      if (!user || user.email !== adminEmail) {
         return res.status(401).json({ error: 'Admin only' });
       }
 
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
     if (req.method === 'DELETE') {
       // Admin only: Delete order
       const user = await verifyUser(req);
-      if (!user || user.email !== ADMIN_EMAIL) {
+      if (!user || user.email !== adminEmail) {
         return res.status(401).json({ error: 'Admin only' });
       }
 

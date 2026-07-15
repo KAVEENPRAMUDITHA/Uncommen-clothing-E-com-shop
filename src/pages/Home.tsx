@@ -25,7 +25,7 @@ export default function Home() {
         <div>
             {/* Hero */}
             <section className="relative h-[85vh] min-h-[560px] flex items-center overflow-hidden">
-                <img src="/images/hero.jpg" alt="Uncommon Clothing" className="absolute inset-0 w-full h-full object-cover" />
+                <img src="/images/banner.png" alt="Uncommon Clothing" className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
                 <div className="relative max-w-7xl mx-auto px-6 w-full">
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-xl text-white">
