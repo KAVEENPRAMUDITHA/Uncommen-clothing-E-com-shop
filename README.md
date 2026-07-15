@@ -1,70 +1,74 @@
-# Getting Started with Create React App
+# Uncommon Clothing E-Commerce Shop
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A premium, modern e-commerce clothing shop built with a robust React/Vite frontend and a serverless Node.js/Supabase backend.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🚀 Features
 
-### `npm start`
+*   **Premium Storefront**: Sleek typography, minimalist styling, dynamic cart, product details, and seamless checkout.
+*   **RBAC Admin Panel**: Secure, role-based admin dashboard to manage products, categories, orders, discount codes, users, and store settings.
+*   **Dynamic Order Tracking**: Order creation with customer-isolated tracking (users only see their own orders; admins see all orders).
+*   **Supabase Storage CDN**: Image upload with automatic bucket validation and real-time public URL mapping.
+*   **Local Serverless Environment**: Dev server routing `/api` functions to a lightweight local Node.js proxy.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🛠️ Tech Stack
 
-### `npm test`
+*   **Frontend**: React 19, Vite, TypeScript, TailwindCSS, Framer Motion, Lucide Icons
+*   **Backend**: Node.js ESM serverless handlers (Vercel standard)
+*   **Database & Auth**: Supabase (PostgreSQL, Row-Level-Security, Auth Identities)
+*   **Local Dev API Host**: Custom ESM dynamic module loader (port 3000)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## 📁 Database Schema (Supabase)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+*   `categories`: Store departments (Men, Women, Accessories, etc.)
+*   `products`: Main product records (prices, inventory, sizes, colors)
+*   `product_images`: Support for multiple high-res product photos
+*   `discounts`: Coupon codes, start/end dates, and percentage rates
+*   `orders` & `order_items`: Order records, billing details, and item breakdowns
+*   `settings`: Dynamic storefront variables (currencies, email SMTP, feature toggles)
+*   `user_roles`: RBAC table mapping user UUIDs to roles (`admin` / `customer`)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## ⚙️ Setup & Installation
 
-### `npm run eject`
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 2. Environment Variables (`.env`)
+Create a `.env` file at the root of the project:
+```env
+# Frontend Supabase Config
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# Backend Server Config
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SECRET_KEY=your-service-role-key
+FULLSTACK_PROJECT_REF=your-project-ref
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## 💻 Running Locally
 
-## Learn More
+To run the full stack locally:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 1. Start the API Backend
+```bash
+node api-server.js
+```
+*Runs on `http://localhost:3000`*
 
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### 2. Start the Vite Frontend
+```bash
+npm run dev
+```
+*Runs on `http://localhost:5173` (requests to `/api/*` are proxied to port 3000)*
