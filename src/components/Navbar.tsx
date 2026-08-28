@@ -1,9 +1,18 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Menu, X, Search, User } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { ShoppingCart, Menu, X, Search, User, Package } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { STORE } from '../lib/utils';
+
+const navLinks = [
+    { label: 'Home', to: '/' },
+    { label: 'Shop', to: '/shop' },
+    { label: 'Men', to: '/shop?category=1' },
+    { label: 'Women', to: '/shop?category=2' },
+    { label: 'Accessories', to: '/shop?category=3' },
+    { label: 'About', to: '/about' },
+];
 
 export default function Navbar() {
     const { count, open } = useCart();
@@ -11,6 +20,23 @@ export default function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [search, setSearch] = useState('');
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const isActive = (to: string) => {
+        const [path, query] = to.split('?');
+        // Exact match for Home
+        if (to === '/') return location.pathname === '/';
+        // For links with query params (Men, Women, Accessories), match both path and query
+        if (query) {
+            return location.pathname === path && location.search === `?${query}`;
+        }
+        // For Shop, only match when there's no category query param
+        if (to === '/shop') {
+            return location.pathname === '/shop' && !location.search.includes('category=');
+        }
+        // For other pages (About), match by pathname
+        return location.pathname === path;
+    };
 
     const submitSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -29,12 +55,19 @@ export default function Navbar() {
                     <span className="text-xl font-light tracking-[0.3em] text-neutral-500 hidden sm:inline">CLOTHING</span>
                 </Link>
                 <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-neutral-700">
-                    <Link to="/" className="hover:text-black transition">Home</Link>
-                    <Link to="/shop" className="hover:text-black transition">Shop</Link>
-                    <Link to="/shop?category=1" className="hover:text-black transition">Men</Link>
-                    <Link to="/shop?category=2" className="hover:text-black transition">Women</Link>
-                    <Link to="/shop?category=3" className="hover:text-black transition">Accessories</Link>
-                    <Link to="/about" className="hover:text-black transition">About</Link>
+                    {navLinks.map(({ label, to }) => (
+                        <Link
+                            key={label}
+                            to={to}
+                            className={`relative pb-1 transition ${
+                                isActive(to)
+                                    ? 'text-black font-bold after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-black after:rounded-full'
+                                    : 'hover:text-black'
+                            }`}
+                        >
+                            {label}
+                        </Link>
+                    ))}
                 </nav>
                 <form onSubmit={submitSearch} className="hidden md:flex items-center border border-neutral-300 rounded-full px-3 py-1.5 focus-within:border-neutral-900 transition">
                     <Search size={16} className="text-neutral-400" />
@@ -43,7 +76,7 @@ export default function Navbar() {
                 <div className="flex items-center gap-1">
                     {user && !isAdmin && (
                         <Link to="/orders" className="hidden sm:flex p-2 hover:bg-neutral-100 rounded-full transition" title="My Orders">
-                            <ShoppingCart size={20} className="text-neutral-600" />
+                            <Package size={20} className="text-neutral-600" />
                         </Link>
                     )}
                     <Link to={user ? (isAdmin ? '/admin' : '/account') : '/account'} className="p-2 hover:bg-neutral-100 rounded-full transition" title={user ? 'My Account' : 'Sign In'}>
@@ -64,15 +97,26 @@ export default function Navbar() {
                 </div>
             </div>
             {menuOpen && (
-                <div className="lg:hidden border-t border-neutral-200 bg-white px-4 py-4 space-y-3">
+                <div className="lg:hidden border-t border-neutral-200 bg-white px-4 py-4 space-y-1">
                     <form onSubmit={submitSearch} className="flex items-center border border-neutral-300 rounded-full px-3 py-2 mb-2">
                         <Search size={16} className="text-neutral-400" />
                         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products..." className="bg-transparent outline-none text-sm ml-2 flex-1" />
                     </form>
-                    {['Home', 'Shop', 'Men', 'Women', 'Accessories', 'About'].map((l, i) => (
-                        <Link key={l} to={i === 0 ? '/' : i === 1 ? '/shop' : i === 2 ? '/shop?category=1' : i === 3 ? '/shop?category=2' : i === 4 ? '/shop?category=3' : '/about'} className="block text-sm font-medium text-neutral-700 py-1" onClick={() => setMenuOpen(false)}>{l}</Link>
+                    {navLinks.map(({ label, to }) => (
+                        <Link
+                            key={label}
+                            to={to}
+                            className={`block text-sm py-2 px-3 rounded-lg transition ${
+                                isActive(to)
+                                    ? 'text-black font-bold bg-neutral-100'
+                                    : 'text-neutral-700 font-medium hover:bg-neutral-50'
+                            }`}
+                            onClick={() => setMenuOpen(false)}
+                        >
+                            {label}
+                        </Link>
                     ))}
-                    <Link to={user ? '/orders' : '/account'} className="block text-sm font-medium text-neutral-700 py-1" onClick={() => setMenuOpen(false)}>
+                    <Link to={user ? '/orders' : '/account'} className="block text-sm font-medium text-neutral-700 py-2 px-3 rounded-lg hover:bg-neutral-50 transition" onClick={() => setMenuOpen(false)}>
                         {user ? 'My Orders' : 'Sign In / Sign Up'}
                     </Link>
                 </div>
@@ -80,3 +124,4 @@ export default function Navbar() {
         </header>
     );
 }
+
