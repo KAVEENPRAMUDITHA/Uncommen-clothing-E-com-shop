@@ -1,34 +1,44 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
-import { ArrowRight, Star, MapPin, Truck, ShieldCheck, RefreshCw, Sparkles } from 'lucide-react';
+import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
+import {
+    ArrowRight,
+    Star,
+    MapPin,
+    Truck,
+    ShieldCheck,
+    RefreshCw,
+    Sparkles
+} from 'lucide-react';
 import { STORE, formatLKR } from '../lib/utils';
 import ProductCard from '../components/ProductCard';
 
 type Cat = { id: number; name: string; slug: string; image_url: string; description: string };
 type Prod = any;
 
-/* ─── animation helpers ─── */
+/* ─── Animation helpers ─── */
 const fadeUp = {
-    hidden: { opacity: 0, y: 40 },
+    hidden: { opacity: 0, y: 30 },
     visible: (i: number = 0) => ({
-        opacity: 1, y: 0,
-        transition: { delay: i * 0.12, duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+        opacity: 1,
+        y: 0,
+        transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] },
     }),
 };
 
 const scaleIn = {
-    hidden: { opacity: 0, scale: 0.9 },
+    hidden: { opacity: 0, scale: 0.92 },
     visible: (i: number = 0) => ({
-        opacity: 1, scale: 1,
-        transition: { delay: i * 0.1, duration: 0.5, ease: 'easeOut' },
+        opacity: 1,
+        scale: 1,
+        transition: { delay: i * 0.08, duration: 0.5, ease: 'easeOut' },
     }),
 };
 
 /* ─── Animated Section wrapper ─── */
 function Section({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     const ref = useRef(null);
-    const inView = useInView(ref, { once: true, margin: '-80px' });
+    const inView = useInView(ref, { once: true, margin: '-60px' });
     return (
         <motion.section
             ref={ref}
@@ -58,24 +68,64 @@ function Marquee() {
     );
 }
 
+/* ─── Hero Slides Data ─── */
+const heroSlides = [
+    {
+        image: '/images/banner.jpg',
+        tag: 'New Collection 2025',
+        title: 'Wear the',
+        titleHighlight: 'Difference.',
+        desc: 'Bold styles for the uncommon. Discover curated fashion that speaks your language — now in Kiribathgoda.',
+        primaryBtn: { text: 'Shop Now', link: '/shop' },
+        secondaryBtn: { text: 'Our Story', link: '/about' },
+    },
+    {
+        image: '/images/group.jpg',
+        tag: 'Signature Street Drop',
+        title: 'Style Without',
+        titleHighlight: 'Compromise.',
+        desc: 'Expressive fits tailored for everyday confidence. Elevate your wardrobe with our latest limited drop.',
+        primaryBtn: { text: 'Explore Collections', link: '/shop' },
+        secondaryBtn: { text: "Men's Apparel", link: '/shop?category=1' },
+    },
+    {
+        image: '/images/about.png',
+        tag: 'Boutique Heritage',
+        title: 'Crafted for the',
+        titleHighlight: 'Uncommon.',
+        desc: 'Hand-selected fabrics and modern cuts designed for individuals who refuse to blend into the background.',
+        primaryBtn: { text: 'Browse Drops', link: '/shop' },
+        secondaryBtn: { text: "Women's Wear", link: '/shop?category=2' },
+    },
+];
+
 export default function Home() {
     const [categories, setCategories] = useState<Cat[]>([]);
     const [products, setProducts] = useState<Prod[]>([]);
     const [loading, setLoading] = useState(true);
 
+    /* Slider state */
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+
     useEffect(() => {
         Promise.all([
             fetch('/api/categories').then(r => r.json()),
             fetch('/api/products?featured=true').then(r => r.json()),
-        ]).then(([c, p]) => { setCategories(c || []); setProducts(p || []); })
-            .catch(() => { }).finally(() => setLoading(false));
+        ]).then(([c, p]) => {
+            setCategories(c || []);
+            setProducts(p || []);
+        }).catch(() => { }).finally(() => setLoading(false));
     }, []);
 
-    /* hero parallax */
-    const heroRef = useRef(null);
-    const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-    const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
-    const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+    /* Auto-advance slides */
+    useEffect(() => {
+        if (isPaused) return;
+        const timer = setInterval(() => {
+            setCurrentSlide(prev => (prev + 1) % heroSlides.length);
+        }, 5500);
+        return () => clearInterval(timer);
+    }, [isPaused, currentSlide]);
 
     const trustBadges = [
         { icon: Truck, title: 'Free Shipping', sub: 'On orders over Rs. 5,000' },
@@ -84,85 +134,134 @@ export default function Home() {
         { icon: MapPin, title: 'Visit Store', sub: 'Kiribathgoda, Sri Lanka' },
     ];
 
+    const slide = heroSlides[currentSlide];
+
     return (
         <div className="overflow-hidden">
-            {/* ─── HERO ─── */}
-            <section ref={heroRef} className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
-                <motion.img
-                    src="/images/banner.jpg"
-                    alt="Uncommon Clothing"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    style={{ y: heroY }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/20" />
-
-                {/* Decorative circles */}
-                <div className="absolute top-20 right-20 w-72 h-72 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute bottom-10 left-10 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none" />
-
-                <motion.div style={{ opacity: heroOpacity }} className="relative max-w-7xl mx-auto px-6 w-full">
+            {/* ─── MODERN HERO SLIDER ─── */}
+            <section
+                className="relative h-[88vh] min-h-[580px] flex items-center overflow-hidden bg-neutral-950"
+                onMouseEnter={() => setIsPaused(true)}
+                onMouseLeave={() => setIsPaused(false)}
+            >
+                {/* Background Sliding Images with Ken-Burns Zoom */}
+                <AnimatePresence mode="wait">
                     <motion.div
-                        initial="hidden"
-                        animate="visible"
-                        className="max-w-xl text-white"
+                        key={currentSlide}
+                        initial={{ opacity: 0, scale: 1.08 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1, ease: 'easeOut' }}
+                        className="absolute inset-0 w-full h-full"
                     >
-                        <motion.span
-                            variants={fadeUp} custom={0}
-                            className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.3em] uppercase border border-white/30 px-5 py-2 rounded-full mb-8 backdrop-blur-sm bg-white/5"
-                        >
-                            <Sparkles size={14} className="text-yellow-400" />
-                            New Collection 2025
-                        </motion.span>
-
-                        <motion.h1
-                            variants={fadeUp} custom={1}
-                            className="text-5xl sm:text-7xl font-black leading-[0.92] mb-6"
-                        >
-                            Wear the<br />
-                            <span className="bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
-                                Difference.
-                            </span>
-                        </motion.h1>
-
-                        <motion.p
-                            variants={fadeUp} custom={2}
-                            className="text-lg text-neutral-300 mb-10 max-w-md leading-relaxed"
-                        >
-                            Bold styles for the uncommon. Discover curated fashion that speaks your language — now in Kiribathgoda.
-                        </motion.p>
-
-                        <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-4">
-                            <Link
-                                to="/shop"
-                                className="group bg-white text-black px-8 py-4 rounded-full font-semibold text-sm hover:bg-neutral-100 transition-all duration-300 flex items-center gap-2 hover:gap-3 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                            >
-                                Shop Now <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
-                            </Link>
-                            <Link
-                                to="/about"
-                                className="border border-white/30 text-white px-8 py-4 rounded-full font-semibold text-sm hover:bg-white/10 hover:border-white/50 transition-all duration-300 backdrop-blur-sm"
-                            >
-                                Our Story
-                            </Link>
-                        </motion.div>
-                    </motion.div>
-                </motion.div>
-
-                {/* Scroll hint */}
-                <motion.div
-                    className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-                    animate={{ y: [0, 8, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                    <span className="text-white/50 text-[10px] tracking-[0.3em] uppercase">Scroll</span>
-                    <div className="w-5 h-8 rounded-full border-2 border-white/30 flex justify-center pt-1.5">
-                        <motion.div
-                            className="w-1 h-1.5 bg-white/60 rounded-full"
-                            animate={{ y: [0, 8, 0], opacity: [1, 0.3, 1] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                        <img
+                            src={slide.image}
+                            alt={slide.titleHighlight}
+                            className="w-full h-full object-cover object-center"
                         />
+                        {/* Smooth Cinematic Gradients */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/30" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+                    </motion.div>
+                </AnimatePresence>
+
+                {/* Decorative ambient lights */}
+                <div className="absolute top-20 right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-10 left-10 w-60 h-60 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+
+                {/* Hero Slide Content */}
+                <div className="relative max-w-7xl mx-auto px-6 w-full z-10">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentSlide}
+                            initial="hidden"
+                            animate="visible"
+                            exit={{ opacity: 0, y: -15 }}
+                            className="max-w-xl text-white"
+                        >
+                            <motion.span
+                                variants={fadeUp}
+                                custom={0}
+                                className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.3em] uppercase border border-white/25 px-5 py-2 rounded-full mb-6 backdrop-blur-md bg-white/10 text-neutral-200"
+                            >
+                                <Sparkles size={13} className="text-yellow-400" />
+                                {slide.tag}
+                            </motion.span>
+
+                            <motion.h1
+                                variants={fadeUp}
+                                custom={1}
+                                className="text-4xl sm:text-6xl lg:text-7xl font-black leading-[0.95] mb-6 tracking-tight"
+                            >
+                                {slide.title}<br />
+                                <span className="bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
+                                    {slide.titleHighlight}
+                                </span>
+                            </motion.h1>
+
+                            <motion.p
+                                variants={fadeUp}
+                                custom={2}
+                                className="text-base sm:text-lg text-neutral-300 mb-8 max-w-md leading-relaxed"
+                            >
+                                {slide.desc}
+                            </motion.p>
+
+                            <motion.div
+                                variants={fadeUp}
+                                custom={3}
+                                className="flex flex-wrap gap-4"
+                            >
+                                <Link
+                                    to={slide.primaryBtn.link}
+                                    className="group bg-white text-black px-8 py-4 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-neutral-100 transition-all duration-300 flex items-center gap-2 hover:gap-3 shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                                >
+                                    {slide.primaryBtn.text}
+                                    <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
+                                </Link>
+                                <Link
+                                    to={slide.secondaryBtn.link}
+                                    className="border border-white/30 text-white px-8 py-4 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-white/10 hover:border-white/50 transition-all duration-300 backdrop-blur-sm"
+                                >
+                                    {slide.secondaryBtn.text}
+                                </Link>
+                            </motion.div>
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+
+
+                {/* Modern Slide Progress Indicators */}
+                <div className="absolute bottom-8 left-0 right-0 z-20">
+                    <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            {heroSlides.map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentSlide(i)}
+                                    className="group relative py-2"
+                                    title={`Slide ${i + 1}`}
+                                >
+                                    <div className="w-12 sm:w-16 h-1 bg-white/20 rounded-full overflow-hidden transition-all duration-300 group-hover:bg-white/40">
+                                        {currentSlide === i && (
+                                            <motion.div
+                                                initial={{ width: '0%' }}
+                                                animate={{ width: isPaused ? '100%' : '100%' }}
+                                                transition={{ duration: 5.5, ease: 'linear' }}
+                                                className="h-full bg-white rounded-full"
+                                            />
+                                        )}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Slide Counter */}
+                        <div className="text-white/60 text-xs font-mono tracking-widest hidden sm:block">
+                            <span className="text-white font-bold">0{currentSlide + 1}</span> / 0{heroSlides.length}
+                        </div>
                     </div>
-                </motion.div>
+                </div>
             </section>
 
             {/* ─── MARQUEE ─── */}
@@ -256,7 +355,6 @@ export default function Home() {
 
             {/* ─── EDITORIAL STRIP ─── */}
             <Section className="relative overflow-hidden">
-                {/* Full-width background image */}
                 <div className="relative min-h-[520px] flex items-center">
                     <img
                         src="/images/group.jpg"
@@ -265,7 +363,6 @@ export default function Home() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
 
-                    {/* Content */}
                     <div className="relative max-w-7xl mx-auto px-6 w-full py-16 grid md:grid-cols-2 gap-10 items-center">
                         <motion.div variants={fadeUp} custom={0}>
                             <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.3em] uppercase text-white/60 border border-white/20 px-4 py-1.5 rounded-full backdrop-blur-sm bg-white/5">
@@ -289,7 +386,6 @@ export default function Home() {
                             </Link>
                         </motion.div>
 
-                        {/* Stats cards */}
                         <motion.div variants={fadeUp} custom={1} className="flex flex-wrap gap-4 justify-center md:justify-end">
                             {[
                                 { value: '500+', label: 'Products' },
@@ -318,7 +414,6 @@ export default function Home() {
                         <div className="grid md:grid-cols-2">
                             {/* Left: Content */}
                             <div className="relative p-10 sm:p-14 flex flex-col justify-center">
-                                {/* Background decorations */}
                                 <div className="absolute inset-0 opacity-20"
                                     style={{
                                         backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)',
@@ -328,7 +423,6 @@ export default function Home() {
                                 <div className="absolute top-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
                                 <div className="relative">
-                                    {/* Stars */}
                                     <motion.div
                                         className="flex items-center gap-1.5 mb-6"
                                         initial={{ opacity: 0 }}
@@ -359,7 +453,6 @@ export default function Home() {
                                         Join thousands who chose to stand out. Exclusive offers, early access to drops, and members-only pricing.
                                     </p>
 
-                                    {/* Feature pills */}
                                     <div className="flex flex-wrap gap-2 mt-6">
                                         {['Exclusive Drops', 'Members Pricing', 'Free Shipping'].map((tag) => (
                                             <span key={tag} className="text-[11px] font-semibold tracking-wider uppercase text-white/70 border border-white/15 px-3.5 py-1.5 rounded-full bg-white/5 backdrop-blur-sm">
