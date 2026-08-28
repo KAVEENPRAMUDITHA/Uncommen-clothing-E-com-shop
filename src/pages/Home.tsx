@@ -314,53 +314,79 @@ export default function Home() {
             {/* ─── PROMO CTA ─── */}
             <Section className="max-w-7xl mx-auto px-6 pt-4 pb-12">
                 <motion.div variants={scaleIn} custom={0}>
-                    <div className="relative rounded-3xl overflow-hidden bg-neutral-900 text-white p-12 sm:p-16">
-                        {/* Animated gradient background */}
-                        <div className="absolute inset-0 opacity-30"
-                            style={{
-                                background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 40%)',
-                            }}
-                        />
-                        <div className="absolute inset-0 opacity-10"
-                            style={{
-                                backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)',
-                                backgroundSize: '32px 32px',
-                            }}
-                        />
+                    <div className="relative rounded-3xl overflow-hidden bg-neutral-900 text-white">
+                        <div className="grid md:grid-cols-2">
+                            {/* Left: Content */}
+                            <div className="relative p-10 sm:p-14 flex flex-col justify-center">
+                                {/* Background decorations */}
+                                <div className="absolute inset-0 opacity-20"
+                                    style={{
+                                        backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)',
+                                        backgroundSize: '28px 28px',
+                                    }}
+                                />
+                                <div className="absolute top-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
-                        <div className="relative max-w-lg">
-                            <motion.div
-                                className="flex items-center gap-1 mb-5"
-                                initial={{ opacity: 0 }}
-                                whileInView={{ opacity: 1 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.8 }}
-                            >
-                                {Array.from({ length: 5 }).map((_, i) => (
+                                <div className="relative">
+                                    {/* Stars */}
                                     <motion.div
-                                        key={i}
-                                        initial={{ opacity: 0, scale: 0 }}
-                                        whileInView={{ opacity: 1, scale: 1 }}
+                                        className="flex items-center gap-1.5 mb-6"
+                                        initial={{ opacity: 0 }}
+                                        whileInView={{ opacity: 1 }}
                                         viewport={{ once: true }}
-                                        transition={{ delay: 0.3 + i * 0.1, type: 'spring', stiffness: 300 }}
+                                        transition={{ duration: 0.8 }}
                                     >
-                                        <Star size={18} className="fill-yellow-400 text-yellow-400" />
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <motion.div
+                                                key={i}
+                                                initial={{ opacity: 0, scale: 0, rotate: -30 }}
+                                                whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+                                                viewport={{ once: true }}
+                                                transition={{ delay: 0.3 + i * 0.1, type: 'spring', stiffness: 300 }}
+                                            >
+                                                <Star size={18} className="fill-yellow-400 text-yellow-400" />
+                                            </motion.div>
+                                        ))}
+                                        <span className="ml-3 text-sm text-neutral-400">{STORE.rating} · {STORE.reviewCount} reviews</span>
                                     </motion.div>
-                                ))}
-                                <span className="ml-3 text-sm text-neutral-300">{STORE.rating} · {STORE.reviewCount} reviews</span>
-                            </motion.div>
-                            <h2 className="text-4xl sm:text-5xl font-black mb-5 leading-tight">
-                                Become<br />Uncommon.
-                            </h2>
-                            <p className="text-neutral-300 mb-8 leading-relaxed">
-                                Join thousands who chose to stand out. Exclusive offers, early access to drops, and members-only pricing.
-                            </p>
-                            <Link
-                                to="/shop"
-                                className="group inline-flex items-center gap-2 bg-white text-black px-9 py-4 rounded-full font-semibold text-sm hover:bg-neutral-100 hover:shadow-[0_0_40px_rgba(255,255,255,0.15)] transition-all duration-300"
-                            >
-                                Browse Collection <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                            </Link>
+
+                                    <h2 className="text-4xl sm:text-5xl font-black leading-tight">
+                                        Become<br />
+                                        <span className="bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">Uncommon.</span>
+                                    </h2>
+
+                                    <p className="text-neutral-400 mt-5 leading-relaxed max-w-sm">
+                                        Join thousands who chose to stand out. Exclusive offers, early access to drops, and members-only pricing.
+                                    </p>
+
+                                    {/* Feature pills */}
+                                    <div className="flex flex-wrap gap-2 mt-6">
+                                        {['Exclusive Drops', 'Members Pricing', 'Free Shipping'].map((tag) => (
+                                            <span key={tag} className="text-[11px] font-semibold tracking-wider uppercase text-white/70 border border-white/15 px-3.5 py-1.5 rounded-full bg-white/5 backdrop-blur-sm">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+
+                                    <Link
+                                        to="/shop"
+                                        className="group inline-flex items-center gap-2 bg-white text-black px-9 py-4 rounded-full font-semibold text-sm hover:bg-neutral-100 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all duration-300 mt-8"
+                                    >
+                                        Browse Collection <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                    </Link>
+                                </div>
+                            </div>
+
+                            {/* Right: Image */}
+                            <div className="relative min-h-[320px] md:min-h-0 overflow-hidden">
+                                <img
+                                    src="/images/women-dress.jpg"
+                                    alt="Uncommon style"
+                                    className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-r from-neutral-900 via-neutral-900/40 to-transparent md:block hidden" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent md:hidden" />
+                            </div>
                         </div>
                     </div>
                 </motion.div>
