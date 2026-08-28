@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    SlidersHorizontal,
+    AlignLeft,
+    ChevronDown,
     Search,
     X,
     Sparkles,
@@ -16,6 +17,18 @@ import ProductCard from '../components/ProductCard';
 
 type Cat = { id: number; name: string };
 type Prod = any;
+
+const sortOptions = [
+    { label: 'Featured', value: 'featured' },
+    { label: 'Most Relevant', value: 'relevance' },
+    { label: 'Best Selling', value: 'best_selling' },
+    { label: 'Alphabetically, A-Z', value: 'title_asc' },
+    { label: 'Alphabetically, Z-A', value: 'title_desc' },
+    { label: 'Price, Low To High', value: 'price_asc' },
+    { label: 'Price, High To Low', value: 'price_desc' },
+    { label: 'Date, Old To New', value: 'date_asc' },
+    { label: 'Date, New To Old', value: 'date_desc' },
+];
 
 const fadeUp = {
     hidden: { opacity: 0, y: 20 },
@@ -31,9 +44,11 @@ export default function Shop() {
     const [categories, setCategories] = useState<Cat[]>([]);
     const [products, setProducts] = useState<Prod[]>([]);
     const [loading, setLoading] = useState(true);
+    const [sortOpen, setSortOpen] = useState(false);
+    const sortRef = useRef<HTMLDivElement>(null);
 
     const category = params.get('category') || 'all';
-    const sort = params.get('sort') || 'default';
+    const sort = params.get('sort') || 'featured';
     const search = params.get('search') || '';
 
     const setParam = (k: string, v: string) => {
@@ -46,6 +61,17 @@ export default function Shop() {
         setParams(new URLSearchParams());
     };
 
+    // Close sort dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+                setSortOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     useEffect(() => {
         fetch('/api/categories')
             .then(r => r.json())
@@ -57,7 +83,7 @@ export default function Shop() {
         setLoading(true);
         const q = new URLSearchParams();
         if (category !== 'all') q.set('category', category);
-        if (sort !== 'default') q.set('sort', sort);
+        if (sort) q.set('sort', sort);
         if (search) q.set('search', search);
 
         fetch(`/api/products?${q.toString()}`)
@@ -71,6 +97,8 @@ export default function Shop() {
         category === 'all'
             ? 'All Collections'
             : categories.find(c => String(c.id) === category)?.name || 'Collection';
+
+    const selectedSortOption = sortOptions.find(o => o.value === sort) || sortOptions[0];
 
     return (
         <div className="min-h-screen bg-neutral-50/40">
@@ -112,39 +140,41 @@ export default function Shop() {
 
             {/* ─── Filter & Toolbar Section ─── */}
             <div className="max-w-7xl mx-auto px-6 pt-8 pb-16">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 pb-5 border-b border-neutral-200">
-                    {/* Category Filter Pills */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            onClick={() => setParam('category', 'all')}
-                            className={`px-5 py-2.5 rounded-full text-xs font-bold tracking-wide uppercase transition-all duration-300 ${
-                                category === 'all'
-                                    ? 'bg-neutral-900 text-white shadow-md'
-                                    : 'bg-white text-neutral-600 border border-neutral-200/80 hover:border-neutral-900 hover:text-neutral-900'
-                            }`}
-                        >
-                            All Pieces
-                        </button>
-                        {categories.map(c => {
-                            const isSelected = category === String(c.id);
-                            return (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-neutral-200">
+                    {/* Category Filter Pills — only shown on main Shop page */}
+                    {category === 'all' && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                onClick={() => setParam('category', 'all')}
+                                className="px-5 py-2.5 rounded-full text-xs font-bold tracking-wide uppercase transition-all duration-300 bg-neutral-900 text-white shadow-md"
+                            >
+                                All Pieces
+                            </button>
+                            {categories.map(c => (
                                 <button
                                     key={c.id}
                                     onClick={() => setParam('category', String(c.id))}
-                                    className={`px-5 py-2.5 rounded-full text-xs font-bold tracking-wide uppercase transition-all duration-300 ${
-                                        isSelected
-                                            ? 'bg-neutral-900 text-white shadow-md'
-                                            : 'bg-white text-neutral-600 border border-neutral-200/80 hover:border-neutral-900 hover:text-neutral-900'
-                                    }`}
+                                    className="px-5 py-2.5 rounded-full text-xs font-bold tracking-wide uppercase transition-all duration-300 bg-white text-neutral-600 border border-neutral-200/80 hover:border-neutral-900 hover:text-neutral-900"
                                 >
                                     {c.name}
                                 </button>
-                            );
-                        })}
-                    </div>
+                            ))}
+                        </div>
+                    )}
 
-                    {/* Active Filter Chips & Sort Controls */}
-                    <div className="flex flex-wrap items-center gap-3">
+                    {category !== 'all' && (
+                        <div className="flex items-center gap-2">
+                            <Link
+                                to="/shop"
+                                className="text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-neutral-900 transition flex items-center gap-1.5"
+                            >
+                                ← View All Collections
+                            </Link>
+                        </div>
+                    )}
+
+                    {/* Active Filter Chips & Modern Sort Controls */}
+                    <div className="flex flex-wrap items-center gap-3 relative ml-auto">
                         {/* Active Search Pill */}
                         {search && (
                             <div className="inline-flex items-center gap-2 bg-neutral-900 text-white px-3.5 py-1.5 rounded-full text-xs font-medium">
@@ -160,19 +190,68 @@ export default function Shop() {
                             </div>
                         )}
 
-                        {/* Sort Selector */}
-                        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-neutral-200 shadow-sm">
-                            <SlidersHorizontal size={14} className="text-neutral-400 ml-1 shrink-0" />
-                            <select
-                                value={sort}
-                                onChange={e => setParam('sort', e.target.value)}
-                                className="text-xs font-semibold text-neutral-800 outline-none bg-transparent pr-2 cursor-pointer py-1"
+                        {/* Modern Sort By Dropdown */}
+                        <div ref={sortRef} className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setSortOpen(!sortOpen)}
+                                className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-neutral-300 hover:border-neutral-900 shadow-sm transition-all duration-200 text-xs font-bold text-neutral-900"
                             >
-                                <option value="default">Sort: Featured</option>
-                                <option value="price_asc">Price: Low to High</option>
-                                <option value="price_desc">Price: High to Low</option>
-                                <option value="newest">Newest First</option>
-                            </select>
+                                <AlignLeft size={15} className="text-neutral-700" />
+                                <span>Sort by</span>
+                                <ChevronDown
+                                    size={15}
+                                    className={`text-neutral-500 transition-transform duration-200 ${
+                                        sortOpen ? 'rotate-180' : ''
+                                    }`}
+                                />
+                            </button>
+
+                            {/* Dropdown Menu Popup */}
+                            <AnimatePresence>
+                                {sortOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                                        className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-100 py-2.5 z-40"
+                                    >
+                                        <div className="space-y-0.5">
+                                            {sortOptions.map((opt) => {
+                                                const isSelected = sort === opt.value;
+                                                return (
+                                                    <button
+                                                        key={opt.value}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setParam('sort', opt.value);
+                                                            setSortOpen(false);
+                                                        }}
+                                                        className="w-full px-4 py-2.5 flex items-center gap-3 text-left text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                                                    >
+                                                        {/* Radio Circle Indicator matching reference */}
+                                                        <div
+                                                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                                                                isSelected
+                                                                    ? 'border-neutral-900 bg-white'
+                                                                    : 'border-neutral-300 bg-neutral-100'
+                                                            }`}
+                                                        >
+                                                            {isSelected && (
+                                                                <div className="w-2 h-2 rounded-full bg-neutral-900" />
+                                                            )}
+                                                        </div>
+                                                        <span className={isSelected ? 'font-bold text-neutral-900' : 'text-neutral-700'}>
+                                                            {opt.label}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </div>
