@@ -255,51 +255,59 @@ export default function Home() {
             </Section>
 
             {/* ─── EDITORIAL STRIP ─── */}
-            <Section className="max-w-7xl mx-auto px-6 py-12">
-                <div className="grid md:grid-cols-2 gap-8 items-center">
-                    <motion.div variants={fadeUp} custom={0} className="relative">
-                        <div className="relative overflow-hidden rounded-2xl aspect-[4/5] shadow-xl">
-                            <img
-                                src="/images/group.jpg"
-                                alt="Style editorial"
-                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
-                            />
-                        </div>
-                        {/* Decorative offset frame */}
-                        <div className="absolute -bottom-4 -right-4 w-full h-full border-2 border-neutral-200 rounded-2xl -z-10" />
-                    </motion.div>
-                    <motion.div variants={fadeUp} custom={1} className="py-8">
-                        <span className="text-xs font-semibold tracking-[0.3em] uppercase text-neutral-400">Our Philosophy</span>
-                        <h2 className="text-4xl sm:text-5xl font-black mt-3 leading-tight">
-                            Style Without<br />
-                            <span className="text-neutral-400">Compromise.</span>
-                        </h2>
-                        <p className="text-neutral-500 mt-6 leading-relaxed max-w-md">
-                            We believe fashion should be bold, accessible, and personal.
-                            Every piece in our collection is handpicked to help you express
-                            the uncommon within — effortlessly.
-                        </p>
-                        <div className="flex gap-8 mt-8">
-                            <div>
-                                <p className="text-3xl font-black">500+</p>
-                                <p className="text-xs text-neutral-400 mt-1">Products</p>
-                            </div>
-                            <div>
-                                <p className="text-3xl font-black">1K+</p>
-                                <p className="text-xs text-neutral-400 mt-1">Happy Customers</p>
-                            </div>
-                            <div>
-                                <p className="text-3xl font-black">5.0</p>
-                                <p className="text-xs text-neutral-400 mt-1">Rating</p>
-                            </div>
-                        </div>
-                        <Link
-                            to="/about"
-                            className="inline-flex items-center gap-2 mt-10 text-sm font-semibold text-neutral-900 border-2 border-neutral-900 px-8 py-3.5 rounded-full hover:bg-neutral-900 hover:text-white transition-all duration-300 group"
-                        >
-                            Learn More <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                    </motion.div>
+            <Section className="relative overflow-hidden">
+                {/* Full-width background image */}
+                <div className="relative min-h-[520px] flex items-center">
+                    <img
+                        src="/images/group.jpg"
+                        alt="Style editorial"
+                        className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
+
+                    {/* Content */}
+                    <div className="relative max-w-7xl mx-auto px-6 w-full py-16 grid md:grid-cols-2 gap-10 items-center">
+                        <motion.div variants={fadeUp} custom={0}>
+                            <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.3em] uppercase text-white/60 border border-white/20 px-4 py-1.5 rounded-full backdrop-blur-sm bg-white/5">
+                                <Sparkles size={12} className="text-yellow-400" />
+                                Our Philosophy
+                            </span>
+                            <h2 className="text-4xl sm:text-5xl font-black mt-5 leading-tight text-white">
+                                Style Without<br />
+                                <span className="bg-gradient-to-r from-white via-neutral-300 to-neutral-500 bg-clip-text text-transparent">Compromise.</span>
+                            </h2>
+                            <p className="text-neutral-300 mt-5 leading-relaxed max-w-md">
+                                We believe fashion should be bold, accessible, and personal.
+                                Every piece in our collection is handpicked to help you express
+                                the uncommon within — effortlessly.
+                            </p>
+                            <Link
+                                to="/about"
+                                className="inline-flex items-center gap-2 mt-8 text-sm font-semibold text-white border-2 border-white/40 px-8 py-3.5 rounded-full hover:bg-white hover:text-black transition-all duration-300 group backdrop-blur-sm"
+                            >
+                                Learn More <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                        </motion.div>
+
+                        {/* Stats cards */}
+                        <motion.div variants={fadeUp} custom={1} className="flex flex-wrap gap-4 justify-center md:justify-end">
+                            {[
+                                { value: '500+', label: 'Products' },
+                                { value: '1K+', label: 'Happy Customers' },
+                                { value: '5.0', label: 'Rating' },
+                            ].map((stat, i) => (
+                                <motion.div
+                                    key={stat.label}
+                                    variants={scaleIn}
+                                    custom={i}
+                                    className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl px-8 py-6 text-center hover:bg-white/15 transition-all duration-300 min-w-[130px]"
+                                >
+                                    <p className="text-3xl font-black text-white">{stat.value}</p>
+                                    <p className="text-xs text-white/60 mt-1.5 font-medium">{stat.label}</p>
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    </div>
                 </div>
             </Section>
 
