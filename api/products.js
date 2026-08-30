@@ -48,9 +48,15 @@ export default async function handler(req, res) {
       if (category && category !== 'all') query = query.eq('category_id', Number(category));
       if (featured === 'true') query = query.eq('featured', true);
       if (search) query = query.ilike('name', `%${search}%`);
-      if (sort === 'price_asc') query = query.order('price', { ascending: true });
+      if (sort === 'featured') query = query.order('featured', { ascending: false }).order('id', { ascending: true });
+      else if (sort === 'best_selling') query = query.order('featured', { ascending: false }).order('id', { ascending: true });
+      else if (sort === 'title_asc') query = query.order('name', { ascending: true });
+      else if (sort === 'title_desc') query = query.order('name', { ascending: false });
+      else if (sort === 'price_asc') query = query.order('price', { ascending: true });
       else if (sort === 'price_desc') query = query.order('price', { ascending: false });
-      else if (sort === 'newest') query = query.order('id', { ascending: false });
+      else if (sort === 'date_asc') query = query.order('id', { ascending: true });
+      else if (sort === 'date_desc' || sort === 'newest') query = query.order('id', { ascending: false });
+      else if (sort === 'relevance') query = query.order('id', { ascending: true });
       else query = query.order('id', { ascending: true });
       const { data, error } = await query;
       if (error) throw error;
