@@ -46,7 +46,10 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname.startsWith('/api/')) {
         const functionName = pathname.replace('/api/', '');
-        const handlerPath = path.resolve(`./api/${functionName}.js`);
+        let handlerPath = path.resolve(`./api/_handlers/${functionName}.js`);
+        if (!fs.existsSync(handlerPath)) {
+            handlerPath = path.resolve(`./api/${functionName}.js`);
+        }
 
         if (fs.existsSync(handlerPath)) {
             try {
