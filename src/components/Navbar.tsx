@@ -3,7 +3,6 @@ import { ShoppingCart, Menu, X, Search, User, Package } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-import { STORE } from '../lib/utils';
 
 const navLinks = [
     { label: 'Home', to: '/' },

@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatLKR } from '../lib/utils';
 import { Tag, ArrowRight, Sparkles } from 'lucide-react';
-
-type Product = any;
+import type { Product } from '../types';
 
 export default function ProductCard({ product }: { product: Product }) {
     const discount = product.discounts;

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
-import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
 import {
     ArrowRight,
     Star,
@@ -10,11 +10,9 @@ import {
     RefreshCw,
     Sparkles
 } from 'lucide-react';
-import { STORE, formatLKR } from '../lib/utils';
+import { STORE } from '../lib/utils';
 import ProductCard from '../components/ProductCard';
-
-type Cat = { id: number; name: string; slug: string; image_url: string; description: string };
-type Prod = any;
+import type { Category, Product } from '../types';
 
 /* ─── Animation helpers ─── */
 const fadeUp = {
@@ -100,8 +98,8 @@ const heroSlides = [
 ];
 
 export default function Home() {
-    const [categories, setCategories] = useState<Cat[]>([]);
-    const [products, setProducts] = useState<Prod[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
     /* Slider state */
