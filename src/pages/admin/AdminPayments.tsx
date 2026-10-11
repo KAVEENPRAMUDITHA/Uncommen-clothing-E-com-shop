@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CreditCard, Save, Check } from 'lucide-react';
 
 export default function AdminPayments() {
-    const [settings, setSettings] = useState({ payhere_merchant_id: '', payhere_secret: '', payhere_enabled: 'true', payhere_sandbox: 'false', stripe_key: '', stripe_secret: '', stripe_enabled: 'false', cod_enabled: 'true', currency: 'LKR' });
+    const [settings, setSettings] = useState({ payhere_merchant_id: '', payhere_secret: '', payhere_app_id: '', payhere_app_secret: '', hosted_domain: '', payhere_enabled: 'true', payhere_sandbox: 'false', stripe_key: '', stripe_secret: '', stripe_enabled: 'false', cod_enabled: 'true', currency: 'LKR' });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -46,6 +46,9 @@ export default function AdminPayments() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div><label className="block text-sm font-medium mb-1.5">Merchant ID</label><input value={settings.payhere_merchant_id} onChange={e => setSettings({ ...settings, payhere_merchant_id: e.target.value })} placeholder="12XXXXX" className="w-full border border-neutral-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-black" /></div>
                         <div><label className="block text-sm font-medium mb-1.5">Merchant Secret</label><input value={settings.payhere_secret} onChange={e => setSettings({ ...settings, payhere_secret: e.target.value })} type="password" placeholder="••••••••" className="w-full border border-neutral-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-black" /></div>
+                        <div><label className="block text-sm font-medium mb-1.5">App ID</label><input value={settings.payhere_app_id || ''} onChange={e => setSettings({ ...settings, payhere_app_id: e.target.value })} placeholder="4OVzEi2..." className="w-full border border-neutral-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-black" /></div>
+                        <div><label className="block text-sm font-medium mb-1.5">App Secret</label><input value={settings.payhere_app_secret || ''} onChange={e => setSettings({ ...settings, payhere_app_secret: e.target.value })} type="password" placeholder="••••••••" className="w-full border border-neutral-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-black" /></div>
+                        <div className="sm:col-span-2"><label className="block text-sm font-medium mb-1.5">Authorized Hosted Domain</label><input value={settings.hosted_domain || ''} onChange={e => setSettings({ ...settings, hosted_domain: e.target.value })} placeholder="https://uncommen-clothing.vercel.app" className="w-full border border-neutral-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-black" /></div>
                     </div>
                     <div className="pt-2 border-t border-neutral-100 flex items-center justify-between">
                         <div>

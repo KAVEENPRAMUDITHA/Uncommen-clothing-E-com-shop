@@ -91,14 +91,16 @@ export default async function handler(req, res) {
 
         const proto = req.headers['x-forwarded-proto'] || 'http';
         const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
-        const origin = req.headers.origin || `${proto}://${host}`;
+        const clientOrigin = req.headers.origin || `${proto}://${host}`;
+        const hostedDomain = (settings.hosted_domain || 'https://uncommen-clothing.vercel.app').replace(/\/+$/, '');
+        const notifyUrl = hostedDomain.startsWith('http') ? `${hostedDomain}/api/payhere-notify` : `https://${hostedDomain}/api/payhere-notify`;
 
         payherePayload = {
           sandbox: isSandbox,
           merchant_id: merchantId,
-          return_url: `${origin}/orders`,
-          cancel_url: `${origin}/checkout`,
-          notify_url: `${origin}/api/payhere-notify`,
+          return_url: `${clientOrigin}/orders`,
+          cancel_url: `${clientOrigin}/checkout`,
+          notify_url: notifyUrl,
           order_id: orderId,
           items: items.map(i => `${i.product_name} x ${i.quantity}`).join(', ').substring(0, 150) || `Order #${order.id}`,
           amount: formattedAmount,
