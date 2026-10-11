@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import supabase, { getAdminEmail } from './db-client.js';
 
 async function verifyUser(req) {
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
       // 1. Create order
       const { data: order, error: orderErr } = await supabase
         .from('orders')
-        .insert({ customer_name, customer_email, customer_phone, address, city, total, payment_method })
+        .insert({ customer_name, customer_email, customer_phone, address, city, total, payment_method, status: 'pending' })
         .select()
         .single();
       
@@ -62,7 +63,64 @@ export default async function handler(req, res) {
       const { error: itemsErr } = await supabase.from('order_items').insert(orderItems);
       if (itemsErr) throw itemsErr;
 
-      return res.status(201).json(order);
+      // 3. Generate PayHere payload if paying by card
+      let payherePayload = null;
+      if (payment_method === 'card') {
+        const { data: settingsRows } = await supabase.from('settings').select('*');
+        const settings = {};
+        (settingsRows || []).forEach(r => { settings[r.key] = r.value; });
+
+        const merchantId = settings.payhere_merchant_id || '1238644';
+        const merchantSecret = settings.payhere_secret || 'Mzg5MzE2ODk1MTM5OTEzNzMzNjMzNDczMTgwMDQ4MTYzNTM3NTkzNA==';
+        const isSandbox = settings.payhere_sandbox === 'true';
+        const currency = settings.currency || 'LKR';
+        const formattedAmount = Number(total).toFixed(2);
+        const orderId = String(order.id);
+
+        const hashedSecret = crypto
+          .createHash('md5')
+          .update(merchantSecret)
+          .digest('hex')
+          .toUpperCase();
+
+        const hash = crypto
+          .createHash('md5')
+          .update(merchantId + orderId + formattedAmount + currency + hashedSecret)
+          .digest('hex')
+          .toUpperCase();
+
+        const proto = req.headers['x-forwarded-proto'] || 'http';
+        const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+        const origin = req.headers.origin || `${proto}://${host}`;
+
+        payherePayload = {
+          sandbox: isSandbox,
+          merchant_id: merchantId,
+          return_url: `${origin}/orders`,
+          cancel_url: `${origin}/checkout`,
+          notify_url: `${origin}/api/payhere-notify`,
+          order_id: orderId,
+          items: items.map(i => `${i.product_name} x ${i.quantity}`).join(', ').substring(0, 150) || `Order #${order.id}`,
+          amount: formattedAmount,
+          currency,
+          hash,
+          first_name: customer_name.trim().split(' ')[0] || 'Customer',
+          last_name: customer_name.trim().split(' ').slice(1).join(' ') || 'Customer',
+          email: customer_email,
+          phone: customer_phone,
+          address,
+          city,
+          country: 'Sri Lanka',
+          delivery_address: address,
+          delivery_city: city,
+          delivery_country: 'Sri Lanka',
+        };
+      }
+
+      return res.status(201).json({
+        ...order,
+        payhere: payherePayload,
+      });
     }
 
     if (req.method === 'PUT') {

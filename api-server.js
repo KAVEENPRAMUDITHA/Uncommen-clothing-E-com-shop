@@ -68,6 +68,14 @@ const server = http.createServer(async (req, res) => {
                     try {
                         if (body && req.headers['content-type']?.includes('application/json')) {
                             req.body = JSON.parse(body);
+                        } else if (body && (req.headers['content-type']?.includes('application/x-www-form-urlencoded') || typeof body === 'string')) {
+                            try {
+                                const params = new URLSearchParams(body);
+                                const parsedObj = Object.fromEntries(params.entries());
+                                req.body = Object.keys(parsedObj).length ? parsedObj : body;
+                            } catch {
+                                req.body = body;
+                            }
                         } else {
                             req.body = body;
                         }

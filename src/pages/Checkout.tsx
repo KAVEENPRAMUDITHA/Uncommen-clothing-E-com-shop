@@ -72,12 +72,48 @@ export default function Checkout() {
                     })),
                 }),
             });
-            if (!res.ok) throw new Error('Order failed');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Failed to create order');
+            }
+            const data = await res.json();
+
+            // If PayHere payment details are returned for card payments
+            if (payment === 'card' && data.payhere) {
+                const payhere = (window as any).payhere;
+                if (!payhere) {
+                    throw new Error('PayHere payment window could not load. Please check your internet connection or ad-blocker.');
+                }
+
+                payhere.onCompleted = function onCompleted(orderId: string) {
+                    console.log('PayHere completed successfully for order:', orderId);
+                    setSuccess(true);
+                    clear();
+                    setLoading(false);
+                };
+
+                payhere.onDismissed = function onDismissed() {
+                    console.log('PayHere payment modal dismissed');
+                    setError(`Order #${data.id} created, but payment was not completed. You can try again or select Cash on Delivery.`);
+                    setLoading(false);
+                };
+
+                payhere.onError = function onError(errorMsg: any) {
+                    console.error('PayHere error:', errorMsg);
+                    setError('Payment error: ' + (typeof errorMsg === 'string' ? errorMsg : 'Payment failed. Please try again.'));
+                    setLoading(false);
+                };
+
+                payhere.startPayment(data.payhere);
+                return;
+            }
+
+            // Cash on Delivery or non-gateway orders
             setSuccess(true);
             clear();
-        } catch {
-            setError('Something went wrong with your order. Please try again.');
-        } finally {
+            setLoading(false);
+        } catch (err: any) {
+            setError(err.message || 'Something went wrong with your order. Please try again.');
             setLoading(false);
         }
     };
@@ -333,16 +369,18 @@ export default function Checkout() {
                                             className="accent-neutral-900 mt-1"
                                         />
                                         <div className="flex-1">
-                                            <div className="flex items-center justify-between">
+                                            <div className="flex items-center justify-between flex-wrap gap-2">
                                                 <span className="font-bold text-sm text-neutral-900 flex items-center gap-2">
-                                                    <CreditCard size={18} /> Credit / Debit Card
+                                                    <CreditCard size={18} /> Online Payment (Cards & Wallets)
                                                 </span>
-                                                <div className="flex gap-1 text-[10px] font-bold text-neutral-500 uppercase">
-                                                    <span>Visa</span> · <span>Mastercard</span>
+                                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-600">
+                                                    <span className="px-1.5 py-0.5 bg-neutral-100 rounded border border-neutral-200 uppercase">Visa</span>
+                                                    <span className="px-1.5 py-0.5 bg-neutral-100 rounded border border-neutral-200 uppercase">Master</span>
+                                                    <span className="px-1.5 py-0.5 bg-amber-50 text-amber-800 rounded border border-amber-200 uppercase font-black">PayHere</span>
                                                 </div>
                                             </div>
                                             <p className="text-xs text-neutral-500 mt-1">
-                                                Secure online checkout processed directly upon order review.
+                                                Fast & secure checkout via PayHere. Accepts Visa, Mastercard, AMEX, Genie, FriMi & eZ Cash.
                                             </p>
                                         </div>
                                     </label>
@@ -415,13 +453,13 @@ export default function Checkout() {
                                 type="submit"
                                 form="checkout-form"
                                 disabled={loading}
-                                className="w-full py-4 bg-neutral-900 text-white rounded-full font-bold text-sm uppercase tracking-wider hover:bg-neutral-800 disabled:opacity-50 transition-all duration-200 shadow-xl hover:shadow-2xl flex items-center justify-center gap-2 group"
+                                className="w-full py-4 bg-neutral-900 text-white rounded-full font-bold text-sm uppercase tracking-wider hover:bg-neutral-800 disabled:opacity-50 transition-all duration-200 shadow-xl hover:shadow-2xl flex items-center justify-center gap-2 group cursor-pointer"
                             >
                                 {loading ? (
-                                    <span>Placing Your Order...</span>
+                                    <span>{payment === 'card' ? 'Opening PayHere Secure Checkout...' : 'Placing Your Order...'}</span>
                                 ) : (
                                     <>
-                                        <span>Confirm & Place Order</span>
+                                        <span>{payment === 'card' ? 'Pay Online with PayHere' : 'Confirm & Place Order'}</span>
                                         <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                                     </>
                                 )}

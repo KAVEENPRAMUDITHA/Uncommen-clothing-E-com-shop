@@ -10,11 +10,13 @@ import signup from './_handlers/signup.js';
 import stats from './_handlers/stats.js';
 import upload from './_handlers/upload.js';
 import users from './_handlers/users.js';
+import payhereNotify from './_handlers/payhere-notify.js';
 
 const handlers = {
   categories,
   discounts,
   orders,
+  'payhere-notify': payhereNotify,
   'product-images': productImages,
   products,
   reviews,

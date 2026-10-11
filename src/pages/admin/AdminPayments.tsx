@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CreditCard, Save, Check } from 'lucide-react';
 
 export default function AdminPayments() {
-    const [settings, setSettings] = useState({ payhere_merchant_id: '', payhere_secret: '', payhere_enabled: 'true', stripe_key: '', stripe_secret: '', stripe_enabled: 'false', cod_enabled: 'true', currency: 'LKR' });
+    const [settings, setSettings] = useState({ payhere_merchant_id: '', payhere_secret: '', payhere_enabled: 'true', payhere_sandbox: 'false', stripe_key: '', stripe_secret: '', stripe_enabled: 'false', cod_enabled: 'true', currency: 'LKR' });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -36,13 +36,23 @@ export default function AdminPayments() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center"><CreditCard size={20} className="text-orange-600" /></div>
-                            <div><h2 className="font-bold">PayHere (Sri Lanka)</h2><p className="text-xs text-neutral-400">Local payment gateway</p></div>
+                            <div>
+                                <h2 className="font-bold">PayHere (Sri Lanka)</h2>
+                                <p className="text-xs text-neutral-400">Accept Visa, Mastercard, AMEX, Genie, FriMi, eZ Cash</p>
+                            </div>
                         </div>
                         <Toggle on={settings.payhere_enabled === 'true'} onChange={v => setSettings({ ...settings, payhere_enabled: v ? 'true' : 'false' })} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div><label className="block text-sm font-medium mb-1.5">Merchant ID</label><input value={settings.payhere_merchant_id} onChange={e => setSettings({ ...settings, payhere_merchant_id: e.target.value })} placeholder="12XXXXX" className="w-full border border-neutral-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-black" /></div>
                         <div><label className="block text-sm font-medium mb-1.5">Merchant Secret</label><input value={settings.payhere_secret} onChange={e => setSettings({ ...settings, payhere_secret: e.target.value })} type="password" placeholder="••••••••" className="w-full border border-neutral-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-black" /></div>
+                    </div>
+                    <div className="pt-2 border-t border-neutral-100 flex items-center justify-between">
+                        <div>
+                            <span className="text-xs font-semibold text-neutral-800">Sandbox (Test Mode)</span>
+                            <p className="text-[11px] text-neutral-400">Enable if using a test/sandbox merchant account before going live</p>
+                        </div>
+                        <Toggle on={settings.payhere_sandbox === 'true'} onChange={v => setSettings({ ...settings, payhere_sandbox: v ? 'true' : 'false' })} />
                     </div>
                 </div>
                 <div className="bg-white rounded-xl border border-neutral-200 p-6 space-y-4">
