@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Mail,
@@ -23,13 +23,22 @@ import { STORE } from '../lib/utils';
 export default function Account() {
     const { user, isAdmin, signIn, signUp, signOut } = useAuth();
     const navigate = useNavigate();
-    const [mode, setMode] = useState<'login' | 'signup'>('login');
+    const [searchParams] = useSearchParams();
+    const redirectUrl = searchParams.get('redirect') || '';
+    const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
+    const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [signupSuccess, setSignupSuccess] = useState(false);
+
+    useEffect(() => {
+        const modeParam = searchParams.get('mode');
+        if (modeParam === 'signup') setMode('signup');
+        else if (modeParam === 'login') setMode('login');
+    }, [searchParams]);
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,7 +48,11 @@ export default function Account() {
         if (mode === 'login') {
             const { error } = await signIn(email, password);
             setLoading(false);
-            if (error) setError(error);
+            if (error) {
+                setError(error);
+            } else if (redirectUrl) {
+                navigate(redirectUrl);
+            }
         } else {
             const { error } = await signUp(email, password);
             setLoading(false);
@@ -53,6 +66,8 @@ export default function Account() {
                         setSignupSuccess(false);
                         setMode('login');
                         setError('Account created! Please sign in with your credentials.');
+                    } else if (redirectUrl) {
+                        navigate(redirectUrl);
                     }
                 }, 1500);
             }
@@ -63,6 +78,11 @@ export default function Account() {
     if (user) {
         if (isAdmin) {
             navigate('/admin');
+            return null;
+        }
+
+        if (redirectUrl) {
+            navigate(redirectUrl);
             return null;
         }
 
@@ -249,6 +269,20 @@ export default function Account() {
                                 : 'Join our club for exclusive drops and seamless tracking'}
                         </p>
                     </div>
+
+                    {redirectUrl === '/checkout' && (
+                        <div className="mb-6 p-4 rounded-2xl bg-neutral-900 text-white text-xs flex items-center gap-3 shadow-md border border-neutral-800">
+                            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                                <ShoppingBag size={18} className="text-yellow-400" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-sm">Account Required for Checkout</p>
+                                <p className="text-neutral-400 text-[11px] mt-0.5">
+                                    Please sign up or sign in below. Your cart items are saved and you will return directly to checkout!
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Mode Switcher Tabs */}
                     <div className="grid grid-cols-2 p-1 bg-neutral-100 rounded-2xl mb-6 text-xs font-bold">

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { formatLKR, STORE } from '../lib/utils';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import ProductCard from '../components/ProductCard';
 
 type Review = { id: number; author: string; rating: number; comment: string; created_at: string };
@@ -25,6 +26,7 @@ export default function ProductDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { add, open } = useCart();
+    const { user } = useAuth();
     const [product, setProduct] = useState<any>(null);
     const [related, setRelated] = useState<any[]>([]);
     const [reviews, setReviews] = useState<Review[]>([]);
@@ -103,7 +105,11 @@ export default function ProductDetail() {
 
     const handleBuyNow = () => {
         handleAdd(false);
-        navigate('/checkout');
+        if (!user) {
+            navigate('/account?redirect=/checkout&mode=signup');
+        } else {
+            navigate('/checkout');
+        }
     };
 
     const submitReview = async (e: React.FormEvent) => {

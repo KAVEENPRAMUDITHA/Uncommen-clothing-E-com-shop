@@ -2,12 +2,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Truck, Sparkles, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import { formatLKR } from '../lib/utils';
 
 const FREE_SHIPPING_THRESHOLD = 5000;
 
 export default function CartDrawer() {
     const { items, isOpen, close, remove, updateQty, total, count } = useCart();
+    const { user } = useAuth();
 
     const progressToFreeShipping = Math.min(100, (total / FREE_SHIPPING_THRESHOLD) * 100);
     const amountNeeded = Math.max(0, FREE_SHIPPING_THRESHOLD - total);
@@ -209,11 +211,11 @@ export default function CartDrawer() {
                                     </div>
 
                                     <Link
-                                        to="/checkout"
+                                        to={user ? "/checkout" : "/account?redirect=/checkout&mode=signup"}
                                         onClick={close}
                                         className="group w-full py-4 bg-neutral-900 text-white rounded-full font-bold text-sm hover:bg-neutral-800 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all duration-200"
                                     >
-                                        Proceed to Checkout
+                                        {user ? 'Proceed to Checkout' : 'Sign Up to Checkout'}
                                         <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                                     </Link>
 

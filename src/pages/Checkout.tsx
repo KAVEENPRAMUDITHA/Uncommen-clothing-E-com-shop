@@ -20,16 +20,24 @@ import {
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { formatLKR, STORE } from '../lib/utils';
+import supabase from '../lib/supabase';
 
 export default function Checkout() {
     const { items, total, clear } = useCart();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '' });
     const [payment, setPayment] = useState('cod');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
+
+    // Require account to access checkout
+    useEffect(() => {
+        if (!authLoading && !user) {
+            navigate('/account?redirect=/checkout&mode=signup');
+        }
+    }, [user, authLoading, navigate]);
 
     // Auto-fill email if user is logged in
     useEffect(() => {
@@ -42,15 +50,20 @@ export default function Checkout() {
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        if (!user) {
+            navigate('/account?redirect=/checkout&mode=signup');
+            return;
+        }
         if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.address.trim() || !form.city.trim()) {
             setError('Please fill in all required delivery details.');
             return;
         }
         setLoading(true);
         try {
-            const session = JSON.parse(localStorage.getItem('uc_session') || '{}');
+            const { data: { session: supaSession } } = await supabase.auth.getSession();
+            const token = supaSession?.access_token || JSON.parse(localStorage.getItem('uc_session') || '{}').token;
             const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-            if (session.token) headers['Authorization'] = `Bearer ${session.token}`;
+            if (token) headers['Authorization'] = `Bearer ${token}`;
             const res = await fetch('/api/orders', {
                 method: 'POST',
                 headers,
@@ -174,6 +187,43 @@ export default function Checkout() {
                                 View My Orders
                             </button>
                         )}
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
+
+    // ─── Require Authentication View ───
+    if (!authLoading && !user) {
+        return (
+            <div className="min-h-[75vh] flex items-center justify-center px-6 py-16 bg-neutral-50/50">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-10 border border-neutral-200 text-center space-y-5 shadow-xl"
+                >
+                    <div className="w-16 h-16 bg-neutral-900 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md">
+                        <User size={30} />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black text-neutral-900 tracking-tight">Account Required</h2>
+                        <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
+                            To place an order and track your delivery, please create an account or sign in. Your cart items are saved and ready!
+                        </p>
+                    </div>
+                    <div className="space-y-2.5 pt-2">
+                        <Link
+                            to="/account?redirect=/checkout&mode=signup"
+                            className="w-full py-3.5 bg-neutral-900 text-white rounded-full font-bold text-xs uppercase tracking-wider hover:bg-neutral-800 flex items-center justify-center gap-2 shadow-lg transition"
+                        >
+                            Create an Account <ArrowRight size={14} />
+                        </Link>
+                        <Link
+                            to="/account?redirect=/checkout&mode=login"
+                            className="w-full py-3 border border-neutral-300 text-neutral-800 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-neutral-50 flex items-center justify-center gap-2 transition"
+                        >
+                            Sign In to Existing Account
+                        </Link>
                     </div>
                 </motion.div>
             </div>

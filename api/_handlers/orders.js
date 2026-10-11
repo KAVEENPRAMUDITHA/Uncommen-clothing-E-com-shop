@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
       let query = supabase.from('orders').select('*, order_items(*)');
-      
+
       // If the user is NOT the admin, filter by their own email
       if (user.email !== adminEmail) {
         query = query.eq('customer_email', user.email);
@@ -36,6 +36,11 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
+      const user = await verifyUser(req);
+      if (!user) {
+        return res.status(401).json({ error: 'Please create an account or sign in to place an order.' });
+      }
+
       const { customer_name, customer_email, customer_phone, address, city, total, payment_method, items } = req.body;
       if (!customer_name || !customer_email || !items || items.length === 0) {
         return res.status(400).json({ error: 'Missing required order fields' });
@@ -47,7 +52,7 @@ export default async function handler(req, res) {
         .insert({ customer_name, customer_email, customer_phone, address, city, total, payment_method, status: 'pending' })
         .select()
         .single();
-      
+
       if (orderErr) throw orderErr;
 
       // 2. Create order items
