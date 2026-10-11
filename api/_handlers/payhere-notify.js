@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import supabase from './db-client.js';
+import { sendOrderEmail } from './mailer.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -84,17 +85,21 @@ export default async function handler(req, res) {
 
     console.log(`[PayHere Notify] Updating order #${order_id} status to: ${newStatus}`);
 
-    const { error: updateErr } = await supabase
+    const { data: updatedOrder, error: updateErr } = await supabase
       .from('orders')
       .update({
         status: newStatus,
       })
-      .eq('id', orderIdNum);
+      .eq('id', orderIdNum)
+      .select()
+      .single();
 
     if (updateErr) {
       console.error('[PayHere Notify] Failed to update order:', updateErr);
       return res.status(500).send('Database update error');
     }
+
+    if (newStatus !== 'pending') await sendOrderEmail(updatedOrder, newStatus);
 
     return res.status(200).send('OK');
   } catch (err) {
