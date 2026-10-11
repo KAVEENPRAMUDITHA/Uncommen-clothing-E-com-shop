@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import supabase, { getAdminEmail } from './db-client.js';
+import { sendOrderEmail } from './mailer.js';
 
 async function verifyUser(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -119,6 +120,9 @@ export default async function handler(req, res) {
         };
       }
 
+      // Card orders get their confirmation email once PayHere confirms payment
+      if (payment_method !== 'card') await sendOrderEmail(order, 'pending');
+
       return res.status(201).json({
         ...order,
         payhere: payherePayload,
@@ -141,6 +145,7 @@ export default async function handler(req, res) {
         .single();
 
       if (error) throw error;
+      await sendOrderEmail(data, status);
       return res.status(200).json(data);
     }
 
