@@ -12,6 +12,8 @@ export const STORE = {
   address: 'L1, 46 Kandy Rd, Kiribathgoda 11600',
   addressLine2: 'Located in: Gamma Tower',
   phone: '074 009 9060',
+  whatsapp: '070 485 0452',
+  whatsappNumber: '94704850452',
   website: 'uncommonclothing.lk',
   hours: 'Mon–Sun: 9:30 AM – 8:30 PM',
   rating: '5.0',

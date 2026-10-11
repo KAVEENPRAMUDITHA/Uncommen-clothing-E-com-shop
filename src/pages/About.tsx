@@ -269,9 +269,20 @@ export default function About() {
                             <div>
                                 <h3 className="font-bold text-lg mb-1">Customer Care</h3>
                                 <p className="text-sm text-neutral-400">{STORE.phone}</p>
-                                <a href={`tel:${STORE.phone}`} className="text-xs text-white underline mt-1.5 inline-block hover:text-neutral-300">
-                                    Call or WhatsApp
-                                </a>
+                                <div className="flex items-center gap-3 mt-1.5">
+                                    <a href={`tel:${STORE.phone}`} className="text-xs text-white underline hover:text-neutral-300">
+                                        Call
+                                    </a>
+                                    <span className="text-xs text-neutral-500">•</span>
+                                    <a
+                                        href={`https://wa.me/${STORE.whatsappNumber}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-emerald-400 underline hover:text-emerald-300 font-medium"
+                                    >
+                                        WhatsApp ({STORE.whatsapp})
+                                    </a>
+                                </div>
                             </div>
                         </div>
 

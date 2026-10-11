@@ -4,6 +4,7 @@ import { CartProvider } from './contexts/CartContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
+import WhatsAppButton from './components/WhatsAppButton';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
@@ -31,6 +32,7 @@ function StoreLayout({ children }: { children: React.ReactNode }) {
             <main className="flex-1">{children}</main>
             <Footer />
             <CartDrawer />
+            <WhatsAppButton />
         </div>
     );
 }
