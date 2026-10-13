@@ -28,9 +28,36 @@
       function loadRrweb() { if (rrwebStarted) return; rrwebStarted = true; var s = document.createElement("script"); s.src = RRWEB_CDN; s.onload = function () { var rec = (window.rrweb && window.rrweb.record) || window.rrwebRecord; if (!rec) return; rec({ emit: function (event) { if (rrwebEvents.length >= MAX_RRWEB_EVENTS || isCapped()) return; rrwebEvents.push(event); } }); }; s.onerror = function () { }; document.head.appendChild(s); }
       window.addEventListener("message", function (e) { if (!e.data || typeof e.data.type !== "string") return; if (e.data.type === "arena:init") { if (!meta) startTime = Date.now(); meta = { generationId: e.data.generationId || e.data.modelId, tournamentId: e.data.tournamentId }; persist(); loadRrweb(); if (e.source) e.source.postMessage({ type: "arena:init-ack", generationId: meta.generationId }, "*"); } if (e.data.type === "arena:flush") { var resp = { type: "arena:recording-data", generationId: meta ? meta.generationId : null, rrwebEvents: rrwebEvents, analytics: buildAnalytics() }; try { sessionStorage.removeItem(SK); } catch (ex) { } if (e.source) e.source.postMessage(resp, "*"); } });
       loadRrweb();
-    })();</script>
-  <script
-    data-arena-views="true">(function () { var isTop = false; try { isTop = window.self === window.top; } catch (e) { } if (!isTop) return; window.__ARENA_META = { generationId: "glm-5.2", tournamentId: "b74ca05e-47f3-4cfd-b2da-c3e3745eabd9" }; var payload = { tournamentId: "b74ca05e-47f3-4cfd-b2da-c3e3745eabd9", modelId: "glm-5.2" }; try { var r = document.referrer; if (r) { var u = new URL(r); payload.referrerDomain = u.hostname; } } catch (e) { } try { var vid = null; try { vid = localStorage.getItem('arena_vid'); } catch (e) { } if (!vid) { vid = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)).slice(0, 32); try { localStorage.setItem('arena_vid', vid); } catch (e) { } } if (vid) payload.viewerId = vid; } catch (e) { } try { fetch("https://www.designarena.ai/api/agon/page-views", { "method": "POST", "headers": { "Content-Type": "application/json" }, "body": JSON.stringify(payload), "keepalive": true }); } catch (e) { } })();</script>
+    })();
+  </script>
+  <!--Start of Tawk.to Script-->
+  <script type="text/javascript">
+    var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
+    Tawk_API.customStyle = {
+      zIndex: 1000,
+      visibility: {
+        desktop: {
+          position: 'br',
+          xOffset: '24px',
+          yOffset: '96px'
+        },
+        mobile: {
+          position: 'br',
+          xOffset: '20px',
+          yOffset: '92px'
+        }
+      }
+    };
+    (function () {
+      var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
+      s1.async = true;
+      s1.src = 'https://embed.tawk.to/6ace13c99c70df34c4fb83ef/1k4qfqjkq';
+      s1.charset = 'UTF-8';
+      s1.setAttribute('crossorigin', '*');
+      s0.parentNode.insertBefore(s1, s0);
+    })();
+  </script>
+  <!--End of Tawk.to Script-->
 </head>
 
 <body>

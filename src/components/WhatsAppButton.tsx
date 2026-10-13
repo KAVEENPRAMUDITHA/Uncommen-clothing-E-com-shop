@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageSquare, X, Send, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE } from '../lib/utils';
@@ -24,6 +24,20 @@ export default function WhatsAppButton({
     const [isOpen, setIsOpen] = useState(false);
     const [customMessage, setCustomMessage] = useState('');
 
+    useEffect(() => {
+        if (typeof window !== 'undefined' && (window as any).Tawk_API) {
+            try {
+                if (isOpen) {
+                    (window as any).Tawk_API.hideWidget?.();
+                } else {
+                    (window as any).Tawk_API.showWidget?.();
+                }
+            } catch {
+                // Ignore if Tawk API not yet ready
+            }
+        }
+    }, [isOpen]);
+
     const getWhatsAppUrl = (msg: string) => {
         const text = encodeURIComponent(msg.trim() || defaultMessage);
         return `https://wa.me/${phoneNumber}?text=${text}`;
@@ -45,7 +59,10 @@ export default function WhatsAppButton({
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end pointer-events-auto">
+        <div 
+            className="fixed bottom-6 right-6 flex flex-col items-end pointer-events-auto"
+            style={{ zIndex: 2147483647 }}
+        >
             {/* WhatsApp Chat Card Popup */}
             <AnimatePresence>
                 {isOpen && (
