@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { MessageSquare, X, Send, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE } from '../lib/utils';
+import { useCart } from '../contexts/CartContext';
 
 interface WhatsAppButtonProps {
     phoneNumber?: string; // Formatted international number without +, e.g., '94704850452'
@@ -21,22 +22,46 @@ export default function WhatsAppButton({
     displayNumber = STORE.whatsapp || '0704850452',
     defaultMessage = 'Hello Uncommon Clothing! I would like to get more information.',
 }: WhatsAppButtonProps) {
+    const { isOpen: isCartOpen } = useCart();
     const [isOpen, setIsOpen] = useState(false);
     const [customMessage, setCustomMessage] = useState('');
 
+    // If Cart drawer opens, close WhatsApp popup
     useEffect(() => {
-        if (typeof window !== 'undefined' && (window as any).Tawk_API) {
+        if (isCartOpen) {
+            setIsOpen(false);
+        }
+    }, [isCartOpen]);
+
+    // Manage Tawk.to widget visibility (hide when Cart is open or WhatsApp is open)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const updateTawkVisibility = () => {
+            const api = (window as any).Tawk_API;
+            if (!api) return;
             try {
-                if (isOpen) {
-                    (window as any).Tawk_API.hideWidget?.();
+                if (isCartOpen || isOpen) {
+                    api.hideWidget?.();
                 } else {
-                    (window as any).Tawk_API.showWidget?.();
+                    api.showWidget?.();
                 }
             } catch {
                 // Ignore if Tawk API not yet ready
             }
+        };
+
+        updateTawkVisibility();
+
+        const api = (window as any).Tawk_API;
+        if (api) {
+            const prevOnLoad = api.onLoad;
+            api.onLoad = function () {
+                updateTawkVisibility();
+                if (typeof prevOnLoad === 'function') prevOnLoad();
+            };
         }
-    }, [isOpen]);
+    }, [isCartOpen, isOpen]);
 
     const getWhatsAppUrl = (msg: string) => {
         const text = encodeURIComponent(msg.trim() || defaultMessage);
@@ -59,13 +84,19 @@ export default function WhatsAppButton({
     };
 
     return (
-        <div 
-            className="fixed bottom-6 right-6 flex flex-col items-end pointer-events-auto"
-            style={{ zIndex: 2147483647 }}
-        >
-            {/* WhatsApp Chat Card Popup */}
-            <AnimatePresence>
-                {isOpen && (
+        <AnimatePresence>
+            {!isCartOpen && (
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.8, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, y: 12 }}
+                    transition={{ duration: 0.2 }}
+                    className="fixed bottom-6 right-6 flex flex-col items-end pointer-events-auto"
+                    style={{ zIndex: 2147483647 }}
+                >
+                    {/* WhatsApp Chat Card Popup */}
+                    <AnimatePresence>
+                        {isOpen && (
                     <motion.div
                         initial={{ opacity: 0, y: 16, scale: 0.94 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -206,6 +237,8 @@ export default function WhatsAppButton({
                     )}
                 </button>
             </div>
-        </div>
+        </motion.div>
+    )}
+</AnimatePresence>
     );
 }
