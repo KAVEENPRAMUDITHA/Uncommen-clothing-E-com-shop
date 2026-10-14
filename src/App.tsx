@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import Navbar from './components/Navbar';
@@ -25,6 +26,38 @@ import AdminPayments from './pages/admin/AdminPayments';
 import ProtectedRoute from './components/admin/ProtectedRoute';
 import SessionSync from './components/SessionSync';
 
+function TawkRouteSync() {
+    const location = useLocation();
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const isAdmin = location.pathname.startsWith('/admin');
+
+        const syncVisibility = () => {
+            const api = (window as any).Tawk_API;
+            if (!api) return;
+            try {
+                if (isAdmin) {
+                    api.hideWidget?.();
+                }
+            } catch {}
+        };
+
+        syncVisibility();
+
+        const api = (window as any).Tawk_API;
+        if (api) {
+            const prevOnLoad = api.onLoad;
+            api.onLoad = function () {
+                syncVisibility();
+                if (typeof prevOnLoad === 'function') prevOnLoad();
+            };
+        }
+    }, [location.pathname]);
+
+    return null;
+}
+
 function StoreLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen flex flex-col bg-white text-neutral-900">
@@ -43,6 +76,7 @@ export default function App() {
             <CartProvider>
                 <SessionSync />
                 <BrowserRouter>
+                    <TawkRouteSync />
                     <Routes>
                         <Route path="/admin/login" element={<AdminLogin />} />
                         <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>

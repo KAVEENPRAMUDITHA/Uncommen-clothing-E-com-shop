@@ -61,6 +61,12 @@ export default function WhatsAppButton({
                 if (typeof prevOnLoad === 'function') prevOnLoad();
             };
         }
+
+        return () => {
+            try {
+                (window as any).Tawk_API?.hideWidget?.();
+            } catch {}
+        };
     }, [isCartOpen, isOpen]);
 
     const getWhatsAppUrl = (msg: string) => {
