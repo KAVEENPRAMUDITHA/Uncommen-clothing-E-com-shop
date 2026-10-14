@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import supabase, { getAdminEmail } from './db-client.js';
+import supabase, { getAdminEmail, verifyAdmin } from './db-client.js';
 import { sendOrderEmail } from './mailer.js';
 
 async function verifyUser(req) {
@@ -17,22 +17,22 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
-    const adminEmail = await getAdminEmail();
-
     if (req.method === 'GET') {
-      const user = await verifyUser(req);
-      if (!user) return res.status(401).json({ error: 'Unauthorized' });
-
+      const admin = await verifyAdmin(req);
       let query = supabase.from('orders').select('*, order_items(*)');
 
-      // If the user is NOT the admin, filter by their own email
-      if (user.email !== adminEmail) {
-        query = query.eq('customer_email', user.email);
+      if (admin) {
+        // Admin gets all orders across all customers
+      } else {
+        const user = await verifyUser(req);
+        if (!user) return res.status(401).json({ error: 'Unauthorized' });
+        // Case-insensitive email comparison for users
+        query = query.ilike('customer_email', (user.email || '').trim());
       }
 
       const { data, error } = await query.order('id', { ascending: false });
       if (error) throw error;
-      return res.status(200).json(data);
+      return res.status(200).json(data || []);
     }
 
     if (req.method === 'POST') {
@@ -126,7 +126,11 @@ export default async function handler(req, res) {
       }
 
       // Card orders get their confirmation email once PayHere confirms payment
-      if (payment_method !== 'card') await sendOrderEmail(order, 'pending');
+      if (payment_method !== 'card') {
+        sendOrderEmail(order, 'pending').catch(e => {
+          console.error('[Mailer] Failed to send initial order confirmation email:', e.message);
+        });
+      }
 
       return res.status(201).json({
         ...order,
@@ -136,33 +140,50 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       // Admin only: Update order status
-      const user = await verifyUser(req);
-      if (!user || user.email !== adminEmail) {
+      const admin = await verifyAdmin(req);
+      if (!admin) {
         return res.status(401).json({ error: 'Admin only' });
       }
 
-      const { id, status } = req.body;
+      const { id, status } = req.body || {};
+      if (!id || !status) {
+        return res.status(400).json({ error: 'Missing order id or status' });
+      }
+
+      const cleanStatus = String(status).trim().toLowerCase();
+      const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+      if (!validStatuses.includes(cleanStatus)) {
+        return res.status(400).json({ error: `Invalid status: ${status}. Must be one of: ${validStatuses.join(', ')}` });
+      }
+
+      const orderId = Number(id);
       const { data, error } = await supabase
         .from('orders')
-        .update({ status })
-        .eq('id', id)
-        .select()
+        .update({ status: cleanStatus })
+        .eq('id', orderId)
+        .select('*, order_items(*)')
         .single();
 
       if (error) throw error;
-      await sendOrderEmail(data, status);
+
+      // Send email asynchronously in the background so slow SMTP / network latency never blocks the HTTP response
+      sendOrderEmail(data, cleanStatus).catch(err => {
+        console.error(`[Mailer] Background status email error for order #${orderId}:`, err.message);
+      });
+
       return res.status(200).json(data);
     }
 
     if (req.method === 'DELETE') {
       // Admin only: Delete order
-      const user = await verifyUser(req);
-      if (!user || user.email !== adminEmail) {
+      const admin = await verifyAdmin(req);
+      if (!admin) {
         return res.status(401).json({ error: 'Admin only' });
       }
 
-      const { id } = req.body;
-      const { error } = await supabase.from('orders').delete().eq('id', id);
+      const { id } = req.body || {};
+      const orderId = Number(id);
+      const { error } = await supabase.from('orders').delete().eq('id', orderId);
       if (error) throw error;
       return res.status(200).json({ ok: true });
     }

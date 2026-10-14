@@ -16,9 +16,11 @@ import {
     Banknote,
     ArrowLeft,
     Calendar,
-    Hash
+    Hash,
+    RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import supabase from '../lib/supabase';
 import { formatLKR, STORE } from '../lib/utils';
 
 type Order = {
@@ -90,8 +92,38 @@ export default function Orders() {
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [expanded, setExpanded] = useState<number | null>(null);
     const [filterStatus, setFilterStatus] = useState<string>('all');
+
+    const fetchOrders = async (showInitialLoading = true) => {
+        if (!user) return;
+        if (showInitialLoading) setLoading(true);
+        else setRefreshing(true);
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || JSON.parse(localStorage.getItem('uc_session') || '{}').token;
+
+            const res = await fetch('/api/orders', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const d = await res.json();
+                if (Array.isArray(d)) {
+                    setOrders(d);
+                    if (showInitialLoading && d.length > 0) {
+                        setExpanded(d[0].id);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Failed to fetch orders:', err);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -99,19 +131,60 @@ export default function Orders() {
             return;
         }
         if (!user) return;
-        const session = JSON.parse(localStorage.getItem('uc_session') || '{}');
-        fetch('/api/orders', { headers: { Authorization: `Bearer ${session.token}` } })
-            .then(r => r.json())
-            .then(d => {
-                const fetchedOrders = d || [];
-                setOrders(fetchedOrders);
-                // Expand the most recent order by default if available
-                if (fetchedOrders.length > 0) {
-                    setExpanded(fetchedOrders[0].id);
+
+        fetchOrders(true);
+
+        // 1. Supabase Realtime Channel: Instantly receive order status updates when admin updates in dashboard
+        const channel = supabase
+            .channel(`user-orders-${user.email || user.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'orders',
+                },
+                (payload) => {
+                    if (payload.eventType === 'UPDATE' && payload.new) {
+                        const updated = payload.new as any;
+                        setOrders(prev => {
+                            const exists = prev.some(o => o.id === updated.id);
+                            if (exists) {
+                                return prev.map(o => o.id === updated.id ? { ...o, ...updated } : o);
+                            }
+                            return prev;
+                        });
+                        // Background fetch to ensure items and associations stay fully fresh
+                        fetchOrders(false);
+                    } else if (payload.eventType === 'INSERT') {
+                        fetchOrders(false);
+                    } else if (payload.eventType === 'DELETE') {
+                        setOrders(prev => prev.filter(o => o.id !== (payload.old as any)?.id));
+                    }
                 }
-            })
-            .catch(() => { })
-            .finally(() => setLoading(false));
+            )
+            .subscribe();
+
+        // 2. Continuous Polling Fallback (every 10s) to guarantee freshness regardless of network / socket status
+        const intervalId = setInterval(() => {
+            fetchOrders(false);
+        }, 10000);
+
+        // 3. Auto-sync on window focus or switching tabs back
+        const handleFocusOrVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                fetchOrders(false);
+            }
+        };
+        window.addEventListener('focus', handleFocusOrVisibility);
+        document.addEventListener('visibilitychange', handleFocusOrVisibility);
+
+        return () => {
+            supabase.removeChannel(channel);
+            clearInterval(intervalId);
+            window.removeEventListener('focus', handleFocusOrVisibility);
+            document.removeEventListener('visibilitychange', handleFocusOrVisibility);
+        };
     }, [user, authLoading]);
 
     if (authLoading || loading) {
@@ -129,7 +202,7 @@ export default function Orders() {
 
     const filteredOrders = filterStatus === 'all'
         ? orders
-        : orders.filter(o => o.status === filterStatus);
+        : orders.filter(o => (o.status || '').toLowerCase() === filterStatus);
 
     return (
         <div className="min-h-screen bg-neutral-50/50 py-12 px-6">
@@ -139,7 +212,7 @@ export default function Orders() {
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                             <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.25em] text-neutral-400">
-                                <Sparkles size={13} className="text-yellow-500" /> Purchase History
+                                <Sparkles size={13} className="text-yellow-500" /> Live Tracking
                             </span>
                         </div>
                         <h1 className="text-3xl sm:text-4xl font-black text-neutral-900 tracking-tight">
@@ -150,21 +223,63 @@ export default function Orders() {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200 text-xs font-semibold shadow-sm">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>Live Updates</span>
+                        </div>
+
+                        <button
+                            onClick={() => fetchOrders(false)}
+                            disabled={refreshing}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-700 hover:text-neutral-900 bg-white border border-neutral-200 px-3.5 py-2 rounded-full shadow-sm hover:bg-neutral-50 transition disabled:opacity-50"
+                            title="Refresh orders"
+                        >
+                            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+                            {refreshing ? 'Refreshing...' : 'Refresh'}
+                        </button>
+
                         <Link
                             to="/account"
                             className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-900 bg-white border border-neutral-200 px-4 py-2 rounded-full shadow-sm transition"
                         >
                             <ArrowLeft size={13} /> Account
                         </Link>
-                        <Link
-                            to="/shop"
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-neutral-900 px-5 py-2 rounded-full shadow-sm hover:bg-neutral-800 transition"
-                        >
-                            Explore Drops <ArrowRight size={13} />
-                        </Link>
                     </div>
                 </div>
+
+                {/* Status Filter Tabs (when orders exist) */}
+                {orders.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 pb-1 border-b border-neutral-200/60">
+                        {[
+                            { key: 'all', label: 'All Orders' },
+                            { key: 'pending', label: 'Placed' },
+                            { key: 'processing', label: 'Processing' },
+                            { key: 'shipped', label: 'Dispatched' },
+                            { key: 'delivered', label: 'Delivered' },
+                            { key: 'cancelled', label: 'Cancelled' },
+                        ].map(tab => {
+                            const count = tab.key === 'all'
+                                ? orders.length
+                                : orders.filter(o => (o.status || '').toLowerCase() === tab.key).length;
+                            if (tab.key !== 'all' && count === 0) return null;
+                            const active = filterStatus === tab.key;
+                            return (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setFilterStatus(tab.key)}
+                                    className={`text-xs font-bold px-3.5 py-1.5 rounded-full transition-all duration-200 ${
+                                        active
+                                            ? 'bg-neutral-900 text-white shadow-sm'
+                                            : 'bg-white text-neutral-600 border border-neutral-200 hover:border-neutral-400'
+                                    }`}
+                                >
+                                    {tab.label} <span className="opacity-75">({count})</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {/* ─── Orders List or Empty State ─── */}
                 {orders.length === 0 ? (
@@ -187,11 +302,22 @@ export default function Orders() {
                             Start Shopping <ArrowRight size={14} />
                         </Link>
                     </motion.div>
+                ) : filteredOrders.length === 0 ? (
+                    <div className="bg-white rounded-3xl p-10 text-center border border-neutral-200/80 shadow-sm max-w-md mx-auto my-6 text-neutral-500 text-xs">
+                        <p className="font-bold">No orders with status "{filterStatus}".</p>
+                        <button
+                            onClick={() => setFilterStatus('all')}
+                            className="mt-3 text-xs underline font-semibold text-neutral-900"
+                        >
+                            View all orders
+                        </button>
+                    </div>
                 ) : (
                     <div className="space-y-5">
                         {filteredOrders.map(order => {
-                            const cfg = statusConfig[order.status] || statusConfig.pending;
-                            const currentStepIdx = statusSteps.findIndex(s => s.key === order.status);
+                            const orderStatus = (order.status || 'pending').toLowerCase();
+                            const cfg = statusConfig[orderStatus] || statusConfig.pending;
+                            const currentStepIdx = statusSteps.findIndex(s => s.key === orderStatus);
                             const isExpanded = expanded === order.id;
 
                             return (
@@ -260,8 +386,19 @@ export default function Orders() {
                                                 transition={{ duration: 0.3 }}
                                                 className="border-t border-neutral-100 px-6 sm:px-8 py-7 bg-neutral-50/40 space-y-7"
                                             >
+                                                {/* Cancelled Notice */}
+                                                {orderStatus === 'cancelled' && (
+                                                    <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-center gap-3 text-rose-800">
+                                                        <XCircle size={20} className="shrink-0 text-rose-600" />
+                                                        <div className="text-xs">
+                                                            <p className="font-bold">This order has been cancelled.</p>
+                                                            <p className="text-rose-600 text-[11px] mt-0.5">Please reach out to our customer care if you have questions or wish to replace the order.</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 {/* Visual Order Progress Tracker */}
-                                                {order.status !== 'cancelled' && (
+                                                {orderStatus !== 'cancelled' && (
                                                     <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm">
                                                         <div className="flex items-center justify-between mb-5">
                                                             <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
