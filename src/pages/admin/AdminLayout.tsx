@@ -19,6 +19,12 @@ export default function AdminLayout() {
     const navigate = useNavigate();
     const [open, setOpen] = useState(false);
 
+    useEffect(() => {
+        try {
+            (window as any).Tawk_API?.hideWidget?.();
+        } catch {}
+    }, []);
+
     const handleSignOut = async () => { await signOut(); navigate('/admin/login'); };
 
     return (
